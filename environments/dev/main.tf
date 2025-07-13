@@ -12,7 +12,6 @@ module "instance_template" {
 
 module "s3_storage" {
   source      = "../../modules/s3_storage"
-  bucket_name = local.bucket_name
   project     = "hello world"
 }
 
