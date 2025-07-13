@@ -10,7 +10,7 @@ module "instance_template" {
 }
 
 module "s3_store" {
-  source      = "../../modules/s3_store"
+  source      = "../../modules/s3_storage"
   project     = "hello-world"
 }
 

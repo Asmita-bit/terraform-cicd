@@ -51,13 +51,13 @@ jobs:
 
       - name: Terraform Validate
         run: terraform validate
-        working-directory: terraform_cicd/environments/${{ matrix.env }}
+        working-directory: environments/${{ matrix.env }}
 
       - name: TFLint
         run: tflint
 
       - name: tfsec
-        run: tfsec terraform_cicd/environments/${{ matrix.env }}
+        run: tfsec environments/${{ matrix.env }}
 
   plan:
     name: Terraform Plan
@@ -77,14 +77,14 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        working-directory: terraform_cicd/environments/${{ matrix.env }}
+        working-directory: environments/${{ matrix.env }}
 
       - name: Terraform Plan
         id: plan
         run: |
           terraform plan -no-color -out=tfplan
           terraform show -no-color tfplan > plan.txt
-        working-directory: terraform_cicd/environments/${{ matrix.env }}
+        working-directory: environments/${{ matrix.env }}
 
       - name: Comment Plan in PR
         uses: mshick/add-pr-comment@v2
@@ -99,7 +99,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tfplan-${{ matrix.env }}
-          path: terraform_cicd/environments/${{ matrix.env }}/tfplan
+          path: environments/${{ matrix.env }}/tfplan
 
   release:
     name: Build and Release Artifact
@@ -157,8 +157,8 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        working-directory: terraform_cicd/environments/${{ matrix.env }}
+        working-directory: environments/${{ matrix.env }}
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
-        working-directory: terraform_cicd/environments/${{ matrix.env }}
+        working-directory: environments/${{ matrix.env }}
