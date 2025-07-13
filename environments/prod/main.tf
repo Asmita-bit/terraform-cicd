@@ -7,6 +7,7 @@ module "instance_template" {
   ami_id        = "ami-05ffe3c48a9991133" # Example AMI
   instance_type = "t2.micro"
   project       = "hello world"
+  tags          = local.common_tags
 }
 
 module "s3_storage" {
