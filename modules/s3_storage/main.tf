@@ -1,6 +1,6 @@
-resource "aws_s3_bucket" "bucket" {
-  bucket = var.bucket_name
-  tags   = var.tags
+resource "aws_s3_bucket" "asmita_s3" {
+  bucket = local.bucket_name
+  tags   = local.tags
 }
 
 resource "aws_s3_bucket_versioning" "versioning" {
