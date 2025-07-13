@@ -1,14 +1,12 @@
 resource "aws_instance" "asmita_ec2" {
   ami           = var.ami_id
   instance_type = var.instance_type
-
   tags = merge(
     local.common_tags,
     {
       Name = local.ec2_name
     }
   )
-
   user_data = <<-EOF
     #!/bin/bash
     sudo apt-get update

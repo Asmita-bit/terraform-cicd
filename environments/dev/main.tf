@@ -6,19 +6,13 @@ module "instance_template" {
   source        = "../../modules/instance_template"
   ami_id        = "ami-05ffe3c48a9991133" # Example AMI
   instance_type = "t2.micro"
-  tags = {
-    Project = "hello-world"
-    Environment = "dev"
-  }
+  project       = "hello world"
 }
 
 module "s3_storage" {
   source      = "../../modules/s3_storage"
   bucket_name = local.bucket_name
-  tags = {
-    Project = "hello-world"
-    Environment = "dev"
-  }
+  project     = "hello world"
 }
 
 
