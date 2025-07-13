@@ -1,5 +1,5 @@
 output "s3_bucket_name" {
-  value = module.s3_store.bucket_name
+  value = module.s3_storage.bucket_name
 }
 
 output "instance_id" {
