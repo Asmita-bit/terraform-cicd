@@ -46,7 +46,10 @@ jobs:
         run: terraform init
         working-directory: environments/${{ matrix.env }}
 
-      - name: Terraform Fmt
+      - name: Terraform Format
+        run: terraform fmt -recursive
+        
+      - name: Terraform Format Check
         run: terraform fmt -check -recursive
 
       - name: Terraform Validate
