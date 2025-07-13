@@ -1,3 +1,13 @@
+locals {
+  ec2_name = "asmita-${var.project}-${terraform.workspace}-ec2"
+
+  common_tags = {
+    Creator     = "asmita"
+    Environment = terraform.workspace
+    Project     = var.project
+  }
+}
+
 resource "aws_instance" "asmita_ec2" {
   ami           = var.ami_id
   instance_type = var.instance_type
