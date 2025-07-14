@@ -1,0 +1,61 @@
+name: Terraform CI/CD
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint-security:
+    name: Lint & Security Scan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: ["ec2-project", "s3-project"]
+    if: github.event_name == 'pull_request'    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.12.1
+
+      - name: Install TFLint
+        run: |
+          curl -sLo tflint.zip https://github.com/terraform-linters/tflint/releases/download/v0.46.1/tflint_linux_amd64.zip
+          unzip tflint.zip -d /usr/local/bin/
+          tflint --version
+
+      - name: Install tfsec
+        run: |
+          curl -sLo tfsec https://github.com/aquasecurity/tfsec/releases/download/v1.28.1/tfsec-linux-amd64
+          chmod +x tfsec
+          mv tfsec /usr/local/bin/
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: /${{ matrix.env }}
+
+      - name: Terraform Format
+        run: terraform fmt -recursive
+        
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: /${{ matrix.env }}
+
+      - name: TFLint
+        run: tflint
+
+      - name: tfsec
+        run: tfsec /${{ matrix.env }}
+
+        
