@@ -62,7 +62,7 @@ jobs:
       id-token: write
       contents: read
       pull-requests: write
-        
+
     runs-on: ubuntu-latest
     strategy:
         matrix:
@@ -93,15 +93,13 @@ jobs:
         terraform plan -no-color -out=tfplan
         terraform show -no-color tfplan > plan.txt
 
-    - name: Comment Plan in PR
-      uses: mshick/add-pr-comment@v2
+    - name: Comment Terraform Plan Results
+      uses: GetTerminus/terraform-pr-commenter@v1
       with:
-        message: |
-            ## Terraform Plan Output for `${{ matrix.env }}`
-            ```
-            ${{ steps.plan.outputs.stdout || 'See plan.txt' }}
-            ```
-
+          commenter_type: "plan"
+          commenter_input: ${{ steps.plan.outputs.stdout }}
+          commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
+    
     - name: Upload Plan Artifact
       uses: actions/upload-artifact@v4
       with:
