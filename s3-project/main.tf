@@ -22,7 +22,7 @@ resource "aws_s3_bucket_policy" "s3_policy" {
       {
         Effect = "Allow"
         Principal = {
-          AWS = data.terraform_remote_state.ec2_project.outputs.ec2_instance_arn
+          AWS = data.terraform_remote_state.ec2_project.outputs.ec2_instance_role_arn
         }
         Action = [
           "s3:PutObject",

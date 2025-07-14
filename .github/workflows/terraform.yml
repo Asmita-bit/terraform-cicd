@@ -106,5 +106,39 @@ jobs:
       with:
         name: tfplan-${{ matrix.env }}
         path: ${{ matrix.env }}/tfplan      
+  
+  release:
+    name: Build and Release Artifact
+    runs-on: ubuntu-latest
+    needs: plan
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
+    steps:
+      - uses: actions/checkout@v4
+      - name: Zip Terraform Directory
+        run: zip -r terraform-artifact.zip terraform-project
 
+      - name: Generate Tag
+        id: tag
+        run: |
+          TAG="v1.0.$(date +%s)"
+          echo "::set-output name=tag::$TAG"
+
+      - name: Create GitHub Tag
+        uses: mathieudutour/github-tag-action@v6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          custom_tag: ${{ steps.tag.outputs.tag }}
+
+      - name: Create GitHub Release
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          automatic_release_tag: ${{ steps.tag.outputs.tag }}
+          files: terraform-artifact.zip
+
+      - name: Comment Release Tag
+        uses: mshick/add-pr-comment@v2
+        with:
+          message: |
+            Terraform Artifact Released: `${{ steps.tag.outputs.tag }}`        
