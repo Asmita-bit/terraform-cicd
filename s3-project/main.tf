@@ -13,12 +13,8 @@ resource "aws_s3_bucket_versioning" "versioning" {
   }
 }
 
-resource "aws_s3_bucket" "this" {
-  bucket = "example-restricted-bucket-1234"
-}
-
-resource "aws_s3_bucket_policy" "this" {
-  bucket = aws_s3_bucket.this.id
+resource "aws_s3_bucket_policy" "s3_policy" {
+  bucket = aws_s3_bucket.this.
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -38,17 +34,11 @@ resource "aws_s3_bucket_policy" "this" {
   })
 }
 
-# Fetch the remote state from the EC2 project
 data "terraform_remote_state" "ec2_project" {
   backend = "s3"
   config = {
-    bucket = "remote-state-bucket-name"
-    key    = "ec2-project/terraform.tfstate"
+    bucket = "asmitagupta-terraform-state-bucket"
+    key    = "ec2/terraform.tfstate"
     region = "us-east-1"
   }
-}
-
-# Assume the EC2 project outputs the ARN as "ec2_instance_arn"
-output "remote_ec2_arn" {
-  value = data.terraform_remote_state.ec2_project.outputs.ec2_instance_arn
 }
