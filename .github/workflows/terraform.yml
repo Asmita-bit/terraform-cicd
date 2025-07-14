@@ -58,6 +58,11 @@ jobs:
   plan:
     name: Terraform Plan
     needs: lint-security
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+        
     runs-on: ubuntu-latest
     strategy:
         matrix:
