@@ -55,4 +55,45 @@ jobs:
       - name: TFLint
         run: tflint
 
+  plan:
+    name: Terraform Plan
+    needs: lint-security
+    runs-on: ubuntu-latest
+    strategy:
+        matrix:
+            env: ["ec2-project", "s3-project"]
+    if: github.event_name == 'pull_request'
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.12.1
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ${{ matrix.env }}
+
+    - name: Terraform Plan
+      id: plan
+      run: |
+        terraform plan -no-color -out=tfplan
+        terraform show -no-color tfplan > plan.txt
+        working-directory: ${{ matrix.env }}
+
+    - name: Comment Plan in PR
+      uses: mshick/add-pr-comment@v2
+      with:
+        message: |
+            ## Terraform Plan Output for `${{ matrix.env }}`
+            ```
+            ${{ steps.plan.outputs.stdout || 'See plan.txt' }}
+            ```
+
+    - name: Upload Plan Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: tfplan-${{ matrix.env }}
+        path: ${{ matrix.env }}/tfplan      
+
 
