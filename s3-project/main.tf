@@ -14,7 +14,7 @@ resource "aws_s3_bucket_versioning" "versioning" {
 }
 
 resource "aws_s3_bucket_policy" "s3_policy" {
-  bucket = aws_s3_bucket.this.
+  bucket = aws_s3_bucket.asmita_s3.bucket_name
 
   policy = jsonencode({
     Version = "2012-10-17"
