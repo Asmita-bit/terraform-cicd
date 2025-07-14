@@ -1,6 +1,7 @@
 resource "aws_instance" "asmita_ec2" {
   ami                         = var.ami_id
   instance_type               = var.instance_type
+  iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name # associate the ec2 profile with the EC2 instance
   associate_public_ip_address = true
   tags = {
     Name    = var.Name
@@ -9,7 +10,6 @@ resource "aws_instance" "asmita_ec2" {
   metadata_options {
 		http_tokens               = "required"
 	}
-  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 }
 
 resource "aws_iam_role" "ec2_role" {
@@ -56,7 +56,7 @@ resource "aws_iam_policy" "policy" {
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "test_profile"
+  name = "asmita-test_profile"
   role =  aws_iam_role.ec2_role.name
 }
 
