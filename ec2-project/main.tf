@@ -9,6 +9,7 @@ resource "aws_instance" "asmita_ec2" {
   metadata_options {
 		http_tokens               = "required"
 	}
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 }
 
 resource "aws_iam_role" "ec2_role" {
