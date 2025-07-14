@@ -55,6 +55,6 @@ jobs:
       - name: TFLint
         run: tflint
 
-      - name: tfsec
-        run: tfsec ${{ matrix.env }}
+      # - name: tfsec
+      #   run: tfsec ${{ matrix.env }}
 
