@@ -43,18 +43,18 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        working-directory: ./${{ matrix.env }}
+        working-directory: ${{ matrix.env }}
 
       - name: Terraform Format
         run: terraform fmt -recursive
         
       - name: Terraform Validate
         run: terraform validate
-        working-directory: ./${{ matrix.env }}
+        working-directory: ${{ matrix.env }}
 
       - name: TFLint
         run: tflint
 
       - name: tfsec
-        run: tfsec ./${{ matrix.env }}
+        run: tfsec ${{ matrix.env }}
 
