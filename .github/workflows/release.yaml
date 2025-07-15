@@ -96,6 +96,7 @@ jobs:
             repo_token: ${{ secrets.TOKEN_GITHUB }}
             automatic_release_tag: ${{ steps.tag_push.outputs.release_tag }}
             files: build-artifacts-${{ steps.tag_push.outputs.release_tag }}.zip
+            prerelease: flase
 
         - name: Upload build artifact
           uses: actions/upload-artifact@v4
