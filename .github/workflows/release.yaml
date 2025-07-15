@@ -81,14 +81,14 @@ jobs:
             fi
             echo "release_tag=$new_tag" >> $GITHUB_OUTPUT
 
-            - name: Build artifact zip
-            run: |
-                TAG=${{ steps.tag_push.outputs.release_tag }}
-                mkdir -p artifact-content
-                cp -r ${{ matrix.env }} artifact-content${{ matrix.env }}
-                cp -r ${{ matrix.env }} artifact-content${{ matrix.env }}
-                cd artifact-content
-                zip -r ../build-artifacts-${TAG}.zip ./*
+        - name: Build artifact zip
+          run: |
+            TAG=${{ steps.tag_push.outputs.release_tag }}
+            mkdir -p artifact-content
+            cp -r ${{ matrix.env }} artifact-content/${{ matrix.env }}
+            cp -r ${{ matrix.env }} artifact-content/${{ matrix.env }}
+            cd artifact-content
+            zip -r ../build-artifacts-${TAG}.zip ./*
 
         - name: Create GitHub Release and upload artifact
           uses: marvinpinto/action-automatic-releases@latest
