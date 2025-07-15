@@ -1,0 +1,226 @@
+name: Terraform CI/CD
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+jobs:
+  lint-security:
+    name: Lint & Security Scan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: ["ec2-project", "s3-project"]
+    if: github.event_name == 'pull_request'    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.12.1
+
+      - name: Install TFLint
+        run: |
+          curl -sLo tflint.zip https://github.com/terraform-linters/tflint/releases/download/v0.46.1/tflint_linux_amd64.zip
+          unzip tflint.zip -d /usr/local/bin/
+          tflint --version
+
+      - name: Install tfsec
+        run: |
+          curl -sLo tfsec https://github.com/aquasecurity/tfsec/releases/download/v1.28.1/tfsec-linux-amd64
+          chmod +x tfsec
+          mv tfsec /usr/local/bin/
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ${{ matrix.env }}
+
+      - name: Terraform Format
+        run: terraform fmt -recursive
+        
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ${{ matrix.env }}
+
+      - name: TFLint
+        run: tflint
+
+  plan:
+    name: Terraform Plan
+    needs: lint-security
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+
+    runs-on: ubuntu-latest
+    strategy:
+        matrix:
+            env: ["ec2-project", "s3-project"]
+    if: github.event_name == 'pull_request'
+    steps:
+    - uses: actions/checkout@v4
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.12.1
+    
+        
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ${{ matrix.env }}
+
+    - name: Terraform Plan
+      id: plan
+      working-directory: ${{ matrix.env }}
+      run: |
+        terraform plan -no-color -out=tfplan
+        terraform show -no-color tfplan > plan.txt
+
+    - name: Comment Terraform Plan Results
+      uses: GetTerminus/terraform-pr-commenter@v1
+      env: 
+        GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}
+      with:
+        commenter_type: "plan"
+        commenter_input: ${{ steps.plan.outputs.stdout }}
+        commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
+    
+    - name: Upload Plan Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: tfplan-${{ matrix.env }}
+        path: ${{ matrix.env }}/tfplan      
+  
+  tag_and_release:
+      needs: [plan]
+      permissions:
+        pull-requests: write
+        contents: write
+      runs-on: ubuntu-latest
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main')
+      strategy:
+        matrix:
+          env: ["ec2-project", "s3-project"]
+      outputs:
+        release_tag: ${{ steps.tag_push.outputs.release_tag }}
+
+      steps:
+        - uses: actions/checkout@v3
+          with:
+            fetch-depth: 0
+
+        - name: Install semver CLI
+          run: |
+            wget https://raw.githubusercontent.com/fsaint-jacques/semver-tool/master/src/semver
+            chmod +x semver
+            sudo mv semver /usr/local/bin/
+
+        - name: Get latest tag
+          id: get_tag
+          run: |
+            latest_tag=$(git tag --list "${{ matrix.env }}@v*" --sort=-creatordate | head -n 1)
+            if [ -z "$latest_tag" ]; then
+              latest_tag="${{ matrix.env }}@v0.0.0"
+            fi
+            echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+
+        - name: Determine bump type
+          id: bump_type
+          run: |
+            latest_tag=$(git tag --list "${{ matrix.env }}@v*" --sort=-creatordate | head -n 1)
+            if [ -z "$latest_tag" ]; then
+              commits=$(git log --oneline)
+            else
+              commits=$(git log "$latest_tag"..HEAD --oneline)
+            fi
+            bump="patch"
+            if echo "$commits" | grep -Eq "BREAKING CHANGE|!:"; then
+              bump="major"
+            elif echo "$commits" | grep -Eiq "^feat"; then
+              bump="minor"
+            fi
+            echo "bump=$bump" >> $GITHUB_OUTPUT
+
+        - name: Calculate new version
+          id: new_version
+          run: |
+            current=${{ steps.get_tag.outputs.latest_tag }}
+            current=${current#${{ matrix.env }}@v}
+            bumped=$(semver bump ${{ steps.bump_type.outputs.bump }} $current)
+            if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+              new_version="${bumped}-dev"
+            else
+              new_version="${bumped}"
+            fi
+            echo "new_version=$new_version" >> $GITHUB_OUTPUT
+
+        - name: Create git tag and push
+          id: tag_push
+          run: |
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            new_tag="${{ matrix.env }}@v${{ steps.new_version.outputs.new_version }}"
+
+            if git rev-parse "$new_tag" >/dev/null 2>&1 || git ls-remote --tags origin | grep -q "refs/tags/$new_tag$"; then
+              echo "Tag $new_tag already exists. Skipping tagging."
+            else
+              git tag -a "$new_tag" -m "chore: release $new_tag"
+              git push origin "$new_tag"
+            fi
+            echo "release_tag=$new_tag" >> $GITHUB_OUTPUT
+
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: us-east-1
+
+        - name: Setup Terraform
+          uses: hashicorp/setup-terraform@v2
+          with:
+            terraform_version: 1.12.2
+
+        - name: Terraform Init and Apply
+          working-directory: ${{ matrix.env }}
+          run: |
+            terraform init -reconfigure
+            terraform apply -auto-approve 
+
+        - name: Build artifact zip
+          run: |
+            TAG=${{ steps.tag_push.outputs.release_tag }}
+            mkdir -p artifact-content/module
+            cp -r ${{ matrix.env }} artifact-content/${{ matrix.env }}
+            cp -r module/${{ matrix.env }} artifact-content/module/${{ matrix.env }}
+            cd artifact-content
+            zip -r ../build-artifacts-${TAG}.zip ./*
+
+        - name: Create GitHub Release and upload artifact
+          uses: marvinpinto/action-automatic-releases@latest
+          with:
+            repo_token: ${{ secrets.TOKEN_GITHUB }}
+            automatic_release_tag: ${{ steps.tag_push.outputs.release_tag }}
+            files: build-artifacts-${{ steps.tag_push.outputs.release_tag }}.zip
+
+        - name: Upload build artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: ${{ matrix.env }}-build-artifact-${{ steps.tag_push.outputs.release_tag }}
+            path: build-artifacts-${{ steps.tag_push.outputs.release_tag }}.zip
