@@ -104,3 +104,27 @@ jobs:
             name: ${{ matrix.env }}-build-artifact-${{ steps.tag_push.outputs.release_tag }}
             path: build-artifacts-${{ steps.tag_push.outputs.release_tag }}.zip
 
+  upload_to_s3:
+      needs: [tag_and_release]
+      if: ${{ always() && needs.tag_and_release.result == 'success' }}
+      runs-on: ubuntu-latest
+      strategy:
+        matrix:
+          env: ["ec2-project", "s3-project"]
+
+      steps:
+        - name: Download ${{ matrix.env }} artifact
+          uses: actions/download-artifact@v4
+          with:
+            name: ${{ matrix.env }}-build-artifact-${{ needs.tag_and_release.outputs.release_tag }}
+            path: ${{ matrix.env }}/
+
+        - name: Configure AWS Credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: us-east-1
+
+        - name: Upload ${{ matrix.env }} artifact to S3
+          run: aws s3 cp ${{ matrix.env }}/build-artifacts-${{ needs.tag_and_release.outputs.release_tag }}.zip s3://com.amrit.terraform-backend.lf/artifacts/${{ matrix.env }}/build-artifacts-${{ needs.tag_and_release.outputs.release_tag }}.zip --acl public-read
