@@ -11,7 +11,6 @@ jobs:
     strategy:
       matrix:
         env: ["ec2-project", "s3-project"]
-    if: github.event_name == 'pull_request'    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -108,7 +107,7 @@ jobs:
         path: ${{ matrix.env }}/tfplan      
   
   tag_and_release:
-      needs: [plan]
+      needs: [plan,lint-security]
       permissions:
         pull-requests: write
         contents: write
