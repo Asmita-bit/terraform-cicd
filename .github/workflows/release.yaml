@@ -23,8 +23,7 @@ jobs:
 
         - name: Install semver CLI
           run: |
-            git clone https://github.com/fsaint-jacques/semver-tool.git
-            cd semver-tool/src
+            curl -sL https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver -o semver
             chmod +x semver
             sudo mv semver /usr/local/bin/
 
