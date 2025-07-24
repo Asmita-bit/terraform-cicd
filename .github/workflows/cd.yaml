@@ -22,7 +22,7 @@ jobs:
         - name: download latest release
           uses: actions/download-artifact@v4
           with:
-            name: latest-release
+            name: latest
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             
