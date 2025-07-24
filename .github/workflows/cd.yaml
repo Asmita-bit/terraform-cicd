@@ -19,30 +19,15 @@ jobs:
           with:
             terraform_version: 1.12.2
 
+        - name: download latest release
+          uses: actions/download-artifact@v3
+          with:
+            name: latest-release
+
         - name: Terraform Init and Apply
           working-directory: ${{ matrix.env }}
           run: |
             terraform init -reconfigure
             terraform apply -auto-approve 
 
-        - name: Build artifact zip
-          run: |
-            TAG=${{ steps.tag_push.outputs.release_tag }}
-            mkdir -p artifact-content/module
-            cp -r ${{ matrix.env }} artifact-content/${{ matrix.env }}
-            cp -r module/${{ matrix.env }} artifact-content/module/${{ matrix.env }}
-            cd artifact-content
-            zip -r ../build-artifacts-${TAG}.zip ./*
-
-        - name: Create GitHub Release and upload artifactt
-          uses: marvinpinto/action-automatic-releases@latest
-          with:
-            repo_token: ${{ secrets.TOKEN_GITHUB }}
-            automatic_release_tag: ${{ steps.tag_push.outputs.release_tag }}
-            files: build-artifacts-${{ steps.tag_push.outputs.release_tag }}.zip
-
-        - name: Upload build artifact
-          uses: actions/upload-artifact@v4
-          with:
-            name: ${{ matrix.env }}-build-artifact-${{ steps.tag_push.outputs.release_tag }}
-            path: build-artifacts-${{ steps.tag_push.outputs.release_tag }}.zip
+        
