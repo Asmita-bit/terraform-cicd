@@ -34,7 +34,7 @@ jobs:
             cd artifact-content
             zip -r ../build-artifacts-${TAG}.zip ./*
 
-        - name: Create GitHub Release and upload artifact
+        - name: Create GitHub Release and upload artifactt
           uses: marvinpinto/action-automatic-releases@latest
           with:
             repo_token: ${{ secrets.TOKEN_GITHUB }}
