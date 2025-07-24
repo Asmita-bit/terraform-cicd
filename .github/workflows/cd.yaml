@@ -23,6 +23,9 @@ jobs:
           uses: actions/download-artifact@v3
           with:
             name: latest-release
+            
+        - name: test
+          run: ls    
 
         - name: Terraform Init and Apply
           working-directory: ${{ matrix.env }}
