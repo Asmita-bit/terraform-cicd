@@ -13,7 +13,7 @@ resource "aws_instance" "asmita_ec2" {
 }
 
 resource "aws_iam_role" "ec2_role" {
-  name = "ec2_role"
+  name = "asmita_ec2_role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -33,7 +33,7 @@ resource "aws_iam_role" "ec2_role" {
 }
 
 resource "aws_iam_policy" "policy" {
-  name        = "this"
+  name        = "asmita_ec2_policy"
   path        = "/"
   description = "ec2 policy to access s3"
 
