@@ -23,6 +23,8 @@ jobs:
           uses: actions/download-artifact@v3
           with:
             name: latest-release
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             
         - name: test
           run: ls    
